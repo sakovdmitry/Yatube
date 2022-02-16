@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}
+  Подписки
+{% endblock %}
+{% block content %}
+  <h1>Посты авторов</h1>
+  {% include 'includes/switcher.html' %}
+    {% for post in page_obj %}
+        {% include 'includes/posts.html' %}
+    {% endfor %}
+    {% include 'includes/paginator.html' %}
+{% endblock %}
