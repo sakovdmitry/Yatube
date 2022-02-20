@@ -181,7 +181,7 @@ TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 
 @override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
-class PostFormTests(TestCase):
+class ImageTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -204,7 +204,7 @@ class PostFormTests(TestCase):
         super().tearDownClass()
         shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
-    def test_create_task(self):
+    def test_create_post(self):
         """Валидная форма создает запись в Post."""
         post_count = Post.objects.count()
         small_gif = (
@@ -332,12 +332,12 @@ class CacheCaseTest(TestCase):
         """Пост остается в кэше до очистки кэша"""
         cache.clear()
         self.post = Post.objects.create(text='Тестовый пост', author=self.user)
-        self.authorized_client.get('/')
+        self.authorized_client.get(reverse('posts:index'))
         self.post.delete()
-        response = self.authorized_client.get('/')
+        response = self.authorized_client.get(reverse('posts:index'))
         self.assertContains(response, 'Тестовый пост')
         cache.clear()
-        response = self.authorized_client.get('/')
+        response = self.authorized_client.get(reverse('posts:index'))
         self.assertNotContains(response, 'Тестовый пост')
 
 
@@ -353,14 +353,19 @@ class CommentCaseTests(TestCase):
 
     def test_comment_authorized(self):
         """Авторизованный пользователь может комментировать записи"""
-        self.authorized_client.post('/posts/1/comment/',
+        self.authorized_client.post(reverse('posts:add_comment',
+                                    kwargs={'post_id': self.post.pk}),
                                     {'text': 'Тестовый комментарий'})
-        response = self.authorized_client.get('/posts/1/')
+        response = self.authorized_client.get(
+            reverse('posts:post_detail',
+                    kwargs={'post_id': self.post.pk}))
         self.assertContains(response, 'Тестовый комментарий')
 
     def test_comment_guest_client(self):
         """Неавторизованный пользователь не может комментировать записи"""
-        self.guest_client.post('/posts/1/comment/',
+        self.guest_client.post(reverse('posts:add_comment',
+                                       kwargs={'post_id': self.post.pk}),
                                {'text': 'Тестовый комментарий'})
-        response = self.guest_client.get('/posts/1/')
+        response = self.guest_client.get(reverse(
+            'posts:post_detail', kwargs={'post_id': self.post.pk}))
         self.assertNotContains(response, 'Тестовый комментарий')
